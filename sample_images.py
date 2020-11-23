@@ -1,9 +1,9 @@
 import os, sys, zipfile, random
 
 def sample_images(base_dir):
-    if len(sys.argv) != 2:
-        print('USAGE: \'python3 sample_images.py [directory containing zip file]\'')
-        exit()
+    # if len(sys.argv) != 2:
+    #     print('USAGE: \'python3 sample_images.py [directory containing zip file]\'')
+    #     exit()
 
     zip_name = 'deimos.zip'
     img_lst_name = 'hirise-map-proj-v3_2/labels-map-proj_v3_2.txt'
@@ -30,3 +30,5 @@ def sample_images(base_dir):
             os.makedirs(os.path.join(base_dir, img_dir))
         for img_nm in sampled:
             z.extract(img_dir + '/' + img_nm, path=base_dir)
+
+sample_images('data')
