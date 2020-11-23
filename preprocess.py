@@ -4,7 +4,8 @@ import os
 
 import sample_images
 
-def get_data(img_dir, labeled=False):
-    sample_images(img_dir)
+def get_data(img_dir, labeled=True):
 
-get_data('data')
+
+def convert_data():
+    None
