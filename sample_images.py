@@ -9,8 +9,8 @@ def sample_images(base_dir):
     img_lst_name = 'hirise-map-proj-v3_2/labels-map-proj_v3_2.txt'
     class_info_name = 'hirise-map-proj-v3_2/landmarks_map-proj-v3_2_classmap.csv'
     img_dir = 'hirise-map-proj-v3_2/map-proj-v3_2'
-    unlabeled_dir = 'hirise-map-proj-v3_2/map-proj-v3_2/unlabeled'
-    labeled_dir = 'hirise-map-proj-v3_2/map-proj-v3_2/labeled'
+    unlabeled_dir = 'hirise-map-proj-v3_2/unlabeled'
+    labeled_dir = 'hirise-map-proj-v3_2/labeled'
 
     # base_dir = sys.argv[1]
     zip_dir = os.path.join(base_dir, zip_name)
@@ -48,13 +48,14 @@ def sample_images(base_dir):
 
         if not os.path.exists(os.path.join(base_dir, unlabeled_dir)):
             os.makedirs(os.path.join(base_dir, unlabeled_dir))
+            print(os.path.join(base_dir, unlabeled_dir))
         for img_nm in unlabeled_sampled:
-            z.extract(img_dir + '/' + img_nm, path=base_dir)
+            z.extract(img_dir + '/' + img_nm, path=os.path.join(base_dir, unlabeled_dir))
 
         if not os.path.exists(os.path.join(base_dir, labeled_dir)):
             os.makedirs(os.path.join(base_dir, labeled_dir))
         for img_nm in labeled_sampled:
-            z.extract(img_dir + '/' + img_nm, path=base_dir)
+            z.extract(img_dir + '/' + img_nm, path=os.path.join(base_dir, labeled_dir))
 
 
 sample_images('data')
