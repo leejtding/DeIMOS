@@ -1,4 +1,4 @@
-import os, sys, zipfile, random
+import os, sys, zipfile, random, shutil
 import numpy as np
 
 def sample_images(base_dir):
@@ -48,7 +48,6 @@ def sample_images(base_dir):
 
         if not os.path.exists(os.path.join(base_dir, unlabeled_dir)):
             os.makedirs(os.path.join(base_dir, unlabeled_dir))
-            print(os.path.join(base_dir, unlabeled_dir))
         for img_nm in unlabeled_sampled:
             z.extract(img_dir + '/' + img_nm, path=os.path.join(base_dir, unlabeled_dir))
 
@@ -56,6 +55,15 @@ def sample_images(base_dir):
             os.makedirs(os.path.join(base_dir, labeled_dir))
         for img_nm in labeled_sampled:
             z.extract(img_dir + '/' + img_nm, path=os.path.join(base_dir, labeled_dir))
+
+    img_download_dir_labeled = os.path.join(base_dir, labeled_dir, img_dir)
+    img_download_dir_unlabeled = os.path.join(base_dir, unlabeled_dir, img_dir)
+    for f_nm in os.listdir(img_download_dir_labeled):
+        shutil.move(os.path.join(img_download_dir_labeled, f_nm), os.path.join(base_dir, labeled_dir))
+    for f_nm in os.listdir(img_download_dir_unlabeled):
+        shutil.move(os.path.join(img_download_dir_unlabeled, f_nm), os.path.join(base_dir, unlabeled_dir))
+    shutil.rmtree(img_download_dir_labeled[:-14])
+    shutil.rmtree(img_download_dir_unlabeled[:-14])
 
 
 sample_images('data')

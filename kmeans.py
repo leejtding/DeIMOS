@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 import glob
 from utils import get_class_dict
 
-image_paths = glob.glob('./data/hirise-map-proj-v3_2/map-proj-v3_2/*.jpg')
+image_paths = glob.glob('./data/hirise-map-proj-v3_2/unlabeled/*.jpg')
+#image_paths = glob.glob('./data/hirise-map-proj-v3_2/labeled/*.jpg')
 list_ds = tf.data.Dataset.list_files(image_paths)
 
 process_fn = lambda x: \
@@ -21,7 +22,7 @@ for batch in batched_ds:
     batch_input = tf.keras.applications.mobilenet_v2.preprocess_input(batch)
     output = model(batch_input).numpy()
 
-pca_model = PCA(n_components=5)
+pca_model = PCA(n_components=10)
 feats = pca_model.fit_transform(output)
 
 sil_scores = []
