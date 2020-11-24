@@ -15,7 +15,9 @@ def sample_images(base_dir):
     # base_dir = sys.argv[1]
     zip_dir = os.path.join(base_dir, zip_name)
 
-    SAMPLE_NUM = 100
+    shutil.rmtree(os.path.join(base_dir, 'hirise-map-proj-v3_2'))
+
+    SAMPLE_NUM = 1000
     RANDOM_SEED = 123
     random.seed(RANDOM_SEED)
 

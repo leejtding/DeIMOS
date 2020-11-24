@@ -18,9 +18,13 @@ batched_ds = image_ds.batch(100)
 
 model = tf.keras.applications.MobileNetV2(input_shape=(96, 96, 3), include_top=False, pooling='max')
 
-for batch in batched_ds:
+for i, batch in enumerate(batched_ds):
     batch_input = tf.keras.applications.mobilenet_v2.preprocess_input(batch)
-    output = model(batch_input).numpy()
+    batch_output = model(batch_input).numpy()
+    if not i:
+        output = batch_output
+    else:
+        output = np.vstack((output, batch_output))
 
 pca_model = PCA(n_components=10)
 feats = pca_model.fit_transform(output)
