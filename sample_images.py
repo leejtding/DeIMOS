@@ -2,6 +2,12 @@ import os, sys, zipfile, random, shutil
 import numpy as np
 
 def sample_images(base_dir):
+    """
+    Given a base directory, takes a random sample of image data stored in that directory, divides them into labeled
+    and unlabeled images, and stored those in two respectively named folders under the base directory.
+    :param base_dir: a directory where the data folder is located.
+    :return: the labeled and unlabeled folder directories.
+    """
     # if len(sys.argv) != 2: print('USAGE: \'python3 sample_images.py [
     # directory containing zip file]\'') exit()
 
@@ -66,6 +72,5 @@ def sample_images(base_dir):
         shutil.move(os.path.join(img_download_dir_unlabeled, f_nm), os.path.join(base_dir, unlabeled_dir))
     shutil.rmtree(img_download_dir_labeled[:-14])
     shutil.rmtree(img_download_dir_unlabeled[:-14])
-
 
 sample_images('data')
