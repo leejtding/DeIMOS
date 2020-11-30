@@ -16,7 +16,9 @@ process_fn = lambda x: \
 image_ds = list_ds.map(process_fn)
 batched_ds = image_ds.batch(100)
 
-model = tf.keras.applications.MobileNetV2(input_shape=(96, 96, 3), include_top=False, pooling='max')
+# For MobileNetV2, input_shape can be 96, 128, 160, 192, 224
+#                  alpha can be 0.35, 0,5, 0,75, 1, 1.3, 1.4
+model = tf.keras.applications.MobileNetV2(alpha=0.35, input_shape=(96, 96, 3), include_top=False, pooling='avg')
 
 for i, batch in enumerate(batched_ds):
     batch_input = tf.keras.applications.mobilenet_v2.preprocess_input(batch)
@@ -26,8 +28,12 @@ for i, batch in enumerate(batched_ds):
     else:
         output = np.vstack((output, batch_output))
 
+output /= np.sum(output**2, axis=1, keepdims=True)**0.5
 pca_model = PCA(n_components=10)
 feats = pca_model.fit_transform(output)
+feats /= np.sum(feats**2, axis=1, keepdims=True)**0.5
+print(pca_model.explained_variance_ratio_, sum(pca_model.explained_variance_ratio_))
+#feats = output
 
 sil_scores = []
 max_k = 10
