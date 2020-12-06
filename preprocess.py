@@ -14,7 +14,7 @@ def get_data(data_dir):
     """
     labelled_path = glob.glob('./' + data_dir + '/labeled/*.jpg')
     unlabelled_path = glob.glob('./' + data_dir + '/unlabeled/*.jpg')
-    label_path = data_dir + '/labels-map-proj_v3_2.txt'  # TODO abstract these file paths
+    label_path = data_dir + '/labels-map-proj_v3_2.txt'  # TODO abstract these file paths? probably fine as is
 
     labels_dict = utils.get_class_dict(label_path)
 
@@ -37,6 +37,4 @@ def get_data(data_dir):
         return image
 
     unlabelled_data = unlabelled_set.map(process_unlabelled)
-    # assert (198 == len(list(labelled_data.as_numpy_iterator())))
-    # TODO is there any way of doing a quick safety check like this
     return labelled_data, unlabelled_data

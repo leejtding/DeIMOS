@@ -1,11 +1,13 @@
 import os, sys, zipfile, random, shutil
 import numpy as np
 
-def sample_images(base_dir):
+def sample_images(base_dir, seed=123, sample_num=1000):
     """
-    Given a base directory, takes a random sample of image data stored in that directory, divides them into labeled
-    and unlabeled images, and stored those in two respectively named folders under the base directory.
+    Given a base directory, takes a random sample of image data stored in that base directory, divides them into
+    labeled and unlabeled images, and stored those under the base directory.
     :param base_dir: a directory where the data folder is located.
+    :param seed: the seed used in the randomizer. Defaults to 123.
+    :param sample_num: the number of images to sample. Defaults to 1000.
     :return: the labeled and unlabeled folder directories.
     """
     # if len(sys.argv) != 2: print('USAGE: \'python3 sample_images.py [
@@ -21,56 +23,57 @@ def sample_images(base_dir):
     # base_dir = sys.argv[1]
     zip_dir = os.path.join(base_dir, zip_name)
 
-    shutil.rmtree(os.path.join(base_dir, 'hirise-map-proj-v3_2'))
+    try:
+        shutil.rmtree(os.path.join(base_dir, 'hirise-map-proj-v3_2'))
+    finally:
+        SAMPLE_NUM = sample_num
+        RANDOM_SEED = seed
+        random.seed(RANDOM_SEED)
 
-    SAMPLE_NUM = 1000
-    RANDOM_SEED = 123
-    random.seed(RANDOM_SEED)
+        img_names = []
+        img_labels = []
 
-    img_names = []
-    img_labels = []
+        with zipfile.ZipFile(zip_dir, 'r') as z:
+            with z.open(img_lst_name) as f:
+                for ln in f:
+                    img = ln.decode('utf-8').split(' ')
+                    img_names.append(img[0])
+                    img_labels.append(img[1].strip())
 
-    with zipfile.ZipFile(zip_dir, 'r') as z:
-        with z.open(img_lst_name) as f:
-            for ln in f:
-                img = ln.decode('utf-8').split(' ')
-                img_names.append(img[0])
-                img_labels.append(img[1].strip())
+            img_names_arr = np.array(img_names)
+            img_labels_arr = np.array(img_labels)
 
-        img_names_arr = np.array(img_names)
-        img_labels_arr = np.array(img_labels)
+            index_list = np.indices(np.shape(img_names_arr)).flatten().tolist()
+            sampled_indices = random.sample(index_list, SAMPLE_NUM)
+            img_names_samples = img_names_arr[sampled_indices]
+            img_labels_samples = img_labels_arr[sampled_indices]
 
-        index_list = np.indices(np.shape(img_names_arr)).flatten().tolist()
-        sampled_indices = random.sample(index_list, SAMPLE_NUM)
-        img_names_samples = img_names_arr[sampled_indices]
-        img_labels_samples = img_labels_arr[sampled_indices]
+            unlabeled_inds = np.where(img_labels_samples == '0')
+            labeled_inds = np.where(img_labels_samples != '0')
 
-        unlabeled_inds = np.where(img_labels_samples == '0')
-        labeled_inds = np.where(img_labels_samples != '0')
+            unlabeled_sampled = img_names_samples[unlabeled_inds].tolist()
+            labeled_sampled = img_names_samples[labeled_inds].tolist()
 
-        unlabeled_sampled = img_names_samples[unlabeled_inds].tolist()
-        labeled_sampled = img_names_samples[labeled_inds].tolist()
+            z.extract(img_lst_name, path=base_dir)
+            z.extract(class_info_name, path=base_dir)
 
-        z.extract(img_lst_name, path=base_dir)
-        z.extract(class_info_name, path=base_dir)
+            if not os.path.exists(os.path.join(base_dir, unlabeled_dir)):
+                os.makedirs(os.path.join(base_dir, unlabeled_dir))
+            for img_nm in unlabeled_sampled:
+                z.extract(img_dir + '/' + img_nm, path=os.path.join(base_dir, unlabeled_dir))
 
-        if not os.path.exists(os.path.join(base_dir, unlabeled_dir)):
-            os.makedirs(os.path.join(base_dir, unlabeled_dir))
-        for img_nm in unlabeled_sampled:
-            z.extract(img_dir + '/' + img_nm, path=os.path.join(base_dir, unlabeled_dir))
+            if not os.path.exists(os.path.join(base_dir, labeled_dir)):
+                os.makedirs(os.path.join(base_dir, labeled_dir))
+            for img_nm in labeled_sampled:
+                z.extract(img_dir + '/' + img_nm, path=os.path.join(base_dir, labeled_dir))
 
-        if not os.path.exists(os.path.join(base_dir, labeled_dir)):
-            os.makedirs(os.path.join(base_dir, labeled_dir))
-        for img_nm in labeled_sampled:
-            z.extract(img_dir + '/' + img_nm, path=os.path.join(base_dir, labeled_dir))
-
-    img_download_dir_labeled = os.path.join(base_dir, labeled_dir, img_dir)
-    img_download_dir_unlabeled = os.path.join(base_dir, unlabeled_dir, img_dir)
-    for f_nm in os.listdir(img_download_dir_labeled):
-        shutil.move(os.path.join(img_download_dir_labeled, f_nm), os.path.join(base_dir, labeled_dir))
-    for f_nm in os.listdir(img_download_dir_unlabeled):
-        shutil.move(os.path.join(img_download_dir_unlabeled, f_nm), os.path.join(base_dir, unlabeled_dir))
-    shutil.rmtree(img_download_dir_labeled[:-14])
-    shutil.rmtree(img_download_dir_unlabeled[:-14])
+        img_download_dir_labeled = os.path.join(base_dir, labeled_dir, img_dir)
+        img_download_dir_unlabeled = os.path.join(base_dir, unlabeled_dir, img_dir)
+        for f_nm in os.listdir(img_download_dir_labeled):
+            shutil.move(os.path.join(img_download_dir_labeled, f_nm), os.path.join(base_dir, labeled_dir))
+        for f_nm in os.listdir(img_download_dir_unlabeled):
+            shutil.move(os.path.join(img_download_dir_unlabeled, f_nm), os.path.join(base_dir, unlabeled_dir))
+        shutil.rmtree(img_download_dir_labeled[:-14])
+        shutil.rmtree(img_download_dir_unlabeled[:-14])
 
 sample_images('data')
