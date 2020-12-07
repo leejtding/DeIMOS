@@ -5,32 +5,81 @@ import tensorflow as tf
 class DEIMOS_Model(tf.keras.Model):
     
     def __init__(self):
-        super.__init__(self)
+        super(DEIMOS_Model, self).__init__()
         
         self.is_learning = True
 
         # static parameters
         self.anneal_factor = 0 # need to figure out how to update
         self.lr = 0.01
+        self.optimizer = tf.keras.optimizers.Adam(self.lr)
         self.epsilon = 1e-10
+        self.u_coeff = 1
+        self.l_coeff = 0.1
+
+        self.max_pool = tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=2)
 
         # parameters to optimize
-        self.lamb = tf.Variable(0.)
-        self.conv1 = tf.keras.layers.Conv2D(64, 3, 3, activation='relu')
-        self.conv2 = tf.keras.layers.Conv2D(64, 3, 3, activation='relu')
+        self.lamb = 0
+
+        self.conv1 = tf.keras.layers.Conv2D(32, 3, strides=2, activation='relu', padding='valid')
+        self.batch_norm1 = tf.keras.layers.BatchNormalization(axis=1)
+        self.conv2 = tf.keras.layers.Conv2D(32, 3, strides=1, activation='relu', padding='same')
+        self.batch_norm2 = tf.keras.layers.BatchNormalization(axis=1)
+        self.conv3 = tf.keras.layers.Conv2D(64, 3, strides=1, activation='relu', padding='same')
+        self.batch_norm3 = tf.keras.layers.BatchNormalization(axis=1)
+        self.conv4 = tf.keras.layers.Conv2D(64, 3, strides=1, activation='relu', padding='same')
+        self.batch_norm4 = tf.keras.layers.BatchNormalization(axis=1)
+        self.fc1 = tf.keras.layers.Dense(32, activation='relu')
+        self.batch_norm5 = tf.keras.layers.BatchNormalization(axis=1)
+        self.fc2 = tf.keras.layers.Dense(32)
         
+        '''
+        Dimensionality Check
+        Initial: (b, 227, 227, 1)
+        After conv1: (b, 112, 112, 32)
+        After pool1: (b, 56, 56, 32)
+        After conv2: (b, 56, 56, 32)
+        After pool2: (b, 28, 28, 32)
+        After conv3: (b, 28, 28, 64)
+        After pool3: (b, 14, 14, 64)
+        After conv4: (b, 14, 14, 64)
+        After pool4: (b, 7, 7, 64)
+        After flatten: (b, 12544)
+        After fc1: (b, 32)
+        After fc2: (b, 32)
+        '''
 
     def call(self, inputs):
+        outs = self.conv1(inputs)
+        outs = self.batch_norm1(outs, training=True)
+        outs = self.max_pool(outs)
+        outs = self.conv2(outs)
+        outs = self.max_pool(outs)
+        outs = self.batch_norm2(outs, training=True)
+        outs = self.conv3(outs)
+        outs = self.max_pool(outs)
+        outs = self.batch_norm3(outs, training=True)
+        outs = self.conv4(outs)
+        outs = self.max_pool(outs)
+        outs = self.batch_norm4(outs, training=True)
+        outs = tf.keras.layers.Flatten()(outs)
+        outs = self.fc1(outs)
+        outs = self.batch_norm5(outs, training=True)
+        outs = self.fc2(outs)
+        return outs
+
+    def predict_call(self, inputs):
         pass
 
     def upper_bound(self):
         if self.is_learning:
-            return 0.95 - self.lamb
+            return 0.95 - self.u_coeff * self.lamb
         return 0.95 - self.anneal_factor
 
     def lower_bound(self):
         if self.is_learning:
-            return 0.455 + 0.1 * self.lamb
+            return 0.455 + self.l_coeff * self.lamb
         return 0.95 - self.anneal_factor
 
     def loss_w(self, feats):
@@ -45,5 +94,5 @@ class DEIMOS_Model(tf.keras.Model):
                 loss -= tf.math.log(dot_prod)
         return loss
 
-    def loss_l(self):
-        return self.upper_bound() - self.lower_bound()
+    def loss_l_update(self):
+        self.lamb -= self.lr * (self.u_coeff - self.l_coeff)

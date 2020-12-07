@@ -3,12 +3,13 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
+from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import glob
-from utils import get_class_dict
+from utils import get_class_dict, tsne_visualization
 
-image_paths = glob.glob('./data/hirise-map-proj-v3_2/unlabeled/*.jpg')
-#image_paths = glob.glob('./data/hirise-map-proj-v3_2/labeled/*.jpg')
+#image_paths = glob.glob('./data/hirise-map-proj-v3_2/unlabeled/*.jpg')
+image_paths = glob.glob('./data/hirise-map-proj-v3_2/labeled/*.jpg')
 list_ds = tf.data.Dataset.list_files(image_paths)
 
 process_fn = lambda x: \
@@ -29,22 +30,25 @@ for i, batch in enumerate(batched_ds):
         output = np.vstack((output, batch_output))
 
 output /= np.sum(output**2, axis=1, keepdims=True)**0.5
-pca_model = PCA(n_components=10)
-feats = pca_model.fit_transform(output)
-feats /= np.sum(feats**2, axis=1, keepdims=True)**0.5
-print(pca_model.explained_variance_ratio_, sum(pca_model.explained_variance_ratio_))
-#feats = output
+params = {'learning_rate': 400}
+tsne_visualization(output, **params)
 
-sil_scores = []
-max_k = 10
-for i in range(2, max_k):
-    kmeans_model = KMeans(i)
-    kmeans_model.fit(feats)
-    cluster_assigns = kmeans_model.predict(feats)
-    sil = silhouette_score(feats, cluster_assigns)
-    sil_scores.append(sil)
+# pca_model = PCA(n_components=10)
+# feats = pca_model.fit_transform(output)
+# feats /= np.sum(feats**2, axis=1, keepdims=True)**0.5
+# print(pca_model.explained_variance_ratio_, sum(pca_model.explained_variance_ratio_))
+# #feats = output
 
-plt.figure()
-plt.plot(np.arange(2, max_k), sil_scores)
-plt.show()
+# sil_scores = []
+# max_k = 10
+# for i in range(2, max_k):
+#     kmeans_model = KMeans(i)
+#     kmeans_model.fit(feats)
+#     cluster_assigns = kmeans_model.predict(feats)
+#     sil = silhouette_score(feats, cluster_assigns)
+#     sil_scores.append(sil)
+
+# plt.figure()
+# plt.plot(np.arange(2, max_k), sil_scores)
+# plt.show()
 
