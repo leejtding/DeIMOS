@@ -16,7 +16,9 @@ class DEIMOS_Model(tf.keras.Model):
 
         # parameters to optimize
         self.lamb = tf.Variable(0.)
-        self.
+        self.conv1 = tf.keras.layers.Conv2D(64, 3, 3, activation='relu')
+        self.conv2 = tf.keras.layers.Conv2D(64, 3, 3, activation='relu')
+        
 
     def call(self, inputs):
         pass
