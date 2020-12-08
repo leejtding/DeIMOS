@@ -12,7 +12,9 @@ Create a folder within this called "data", and download the zip in there. Use th
 - Parameters to tune:
     - In `test.py`
         - `learning_rate` in the `tsne_params` dict (ranges from 10 to 1000 and I don't really understand it tbh)
+        - Other stuff for tsne parameters, check the sklearn for it.
         - `n_clusters` in the model initialization. Since kmeans kind of failed (perhaps I can still salvage it with resnet > mobilenet? not sure), I don't know how many clusters it should be.
+        - `n_epochs` self-explanatory. Don't think this matters too much rn but idk.
     - In `model.py`
         - `self.lr` self-explanatory
         - `self.u_coeff` and `self.l_coeff`; these determine how quickly we want to include more training data (the paradigm is you select training data based-off similarity in terms of wanting very similar or very dissimilar training data, and as the model trains, this becomes less selective). `u_coeff` governs how quickly we want to include similar data, and `l_coeff` governs how quickly we want to include dissimilar data. I think we can definitely try increasing `l_coeff` and decreasing `u_coeff`, since rn it's making everything too similar
