@@ -4,7 +4,7 @@ import tensorflow as tf
 
 class DEIMOS_Model(tf.keras.Model):
     
-    def __init__(self):
+    def __init__(self, n_clusters):
         super(DEIMOS_Model, self).__init__()
         
         self.is_learning = True
@@ -16,6 +16,7 @@ class DEIMOS_Model(tf.keras.Model):
         self.epsilon = 1e-10
         self.u_coeff = 1
         self.l_coeff = 0.1
+        self.n_clusters = n_clusters
 
         self.max_pool = tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=2)
 
@@ -30,9 +31,9 @@ class DEIMOS_Model(tf.keras.Model):
         self.batch_norm3 = tf.keras.layers.BatchNormalization(axis=1)
         self.conv4 = tf.keras.layers.Conv2D(64, 3, strides=1, activation='relu', padding='same')
         self.batch_norm4 = tf.keras.layers.BatchNormalization(axis=1)
-        self.fc1 = tf.keras.layers.Dense(32, activation='relu')
+        self.fc1 = tf.keras.layers.Dense(self.n_clusters, activation='relu')
         self.batch_norm5 = tf.keras.layers.BatchNormalization(axis=1)
-        self.fc2 = tf.keras.layers.Dense(32)
+        self.fc2 = tf.keras.layers.Dense(self.n_clusters)
         
         '''
         Dimensionality Check
@@ -46,45 +47,46 @@ class DEIMOS_Model(tf.keras.Model):
         After conv4: (b, 14, 14, 64)
         After pool4: (b, 7, 7, 64)
         After flatten: (b, 12544)
-        After fc1: (b, 32)
-        After fc2: (b, 32)
+        After fc1: (b, self.n_clusters)
+        After fc2: (b, self.n_clusters)
         '''
 
-    def call(self, inputs):
+    def call(self, inputs, training=False, mask=None):
         outs = self.conv1(inputs)
-        outs = self.batch_norm1(outs, training=True)
+        outs = self.batch_norm1(outs, training=training)
         outs = self.max_pool(outs)
         outs = self.conv2(outs)
         outs = self.max_pool(outs)
-        outs = self.batch_norm2(outs, training=True)
+        outs = self.batch_norm2(outs, training=training)
         outs = self.conv3(outs)
         outs = self.max_pool(outs)
-        outs = self.batch_norm3(outs, training=True)
+        outs = self.batch_norm3(outs, training=training)
         outs = self.conv4(outs)
         outs = self.max_pool(outs)
-        outs = self.batch_norm4(outs, training=True)
+        outs = self.batch_norm4(outs, training=training)
         outs = tf.keras.layers.Flatten()(outs)
         outs = self.fc1(outs)
-        outs = self.batch_norm5(outs, training=True)
+        outs = self.batch_norm5(outs, training=training)
         outs = self.fc2(outs)
         return outs
 
-    def predict_call(self, inputs):
-        pass
+    def get_clusters(self, inputs):
+        '''
+        inputs: Tensor with dimension (_, self.n_clusters)
+        '''
+        inputs += tf.math.reduce_min(inputs)
+        inputs, _ = tf.linalg.normalize(inputs, axis=1)
+        return tf.argmax(inputs, axis=1)
 
     def upper_bound(self):
-        if self.is_learning:
-            return 0.95 - self.u_coeff * self.lamb
-        return 0.95 - self.anneal_factor
+        return 0.95 - self.u_coeff * self.lamb
 
     def lower_bound(self):
-        if self.is_learning:
-            return 0.455 + self.l_coeff * self.lamb
-        return 0.95 - self.anneal_factor
+        return 0.455 + self.l_coeff * self.lamb
 
     def loss_w(self, feats):
         feats += tf.math.reduce_min(feats)
-        feats = tf.linalg.normalize(feats, axis=1)
+        feats, _ = tf.linalg.normalize(feats, axis=1)
         loss = 0
         for tens_1, tens_2 in combinations(feats, 2):
             dot_prod = tf.reduce_sum(tens_1 * tens_2) + self.epsilon
