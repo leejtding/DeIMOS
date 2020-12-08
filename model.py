@@ -33,7 +33,7 @@ class DEIMOS_Model(tf.keras.Model):
         self.batch_norm4 = tf.keras.layers.BatchNormalization(axis=1)
         self.fc1 = tf.keras.layers.Dense(self.n_clusters, activation='relu')
         self.batch_norm5 = tf.keras.layers.BatchNormalization(axis=1)
-        self.fc2 = tf.keras.layers.Dense(self.n_clusters)
+        self.fc2 = tf.keras.layers.Dense(self.n_clusters, activation='softmax')
         
         '''
         Dimensionality Check
@@ -74,8 +74,8 @@ class DEIMOS_Model(tf.keras.Model):
         '''
         inputs: Tensor with dimension (_, self.n_clusters)
         '''
-        inputs += tf.math.reduce_min(inputs)
-        inputs, _ = tf.linalg.normalize(inputs, axis=1)
+        #inputs += tf.math.reduce_min(inputs)
+        #inputs, _ = tf.linalg.normalize(inputs, axis=1)
         return tf.argmax(inputs, axis=1)
 
     def upper_bound(self):
@@ -85,15 +85,17 @@ class DEIMOS_Model(tf.keras.Model):
         return 0.455 + self.l_coeff * self.lamb
 
     def loss_w(self, feats):
-        feats += tf.math.reduce_min(feats)
+        #feats += tf.math.reduce_min(feats)
         feats, _ = tf.linalg.normalize(feats, axis=1)
         loss = 0
         for tens_1, tens_2 in combinations(feats, 2):
             dot_prod = tf.reduce_sum(tens_1 * tens_2) + self.epsilon
             if dot_prod < self.lower_bound():
-                loss -= tf.math.log(1 - dot_prod)
+                loss = tf.math.log(1 - dot_prod)
             elif dot_prod > self.upper_bound():
                 loss -= tf.math.log(dot_prod)
+        if loss == 0:
+            return None
         return loss
 
     def loss_l_update(self):

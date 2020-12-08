@@ -15,19 +15,21 @@ tsne_params = {
 }
 
 labeled_data, unlabeled_data = get_data('data/hirise-map-proj-v3_2')
-batched_ds = unlabeled_data.batch(90)
-#batched_ds = labeled_data.batch(90)
 
 model = DEIMOS_Model(n_clusters=10)
-n_epochs = 1
+n_epochs = 5
 
 # Train loop
 for i in range(n_epochs):
     print(i)
+    unlabeled_data = unlabeled_data.shuffle(200)
+    batched_ds = unlabeled_data.batch(90)
     for j, batch in enumerate(batched_ds):
         with tf.GradientTape() as tape:
             out_feats = model(batch)
             loss = model.loss_w(out_feats)
+            if loss is None:
+                continue
             grads = tape.gradient(loss, model.trainable_variables)
             model.optimizer.apply_gradients(zip(grads, model.trainable_variables))
     model.loss_l_update()
