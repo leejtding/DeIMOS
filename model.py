@@ -10,7 +10,6 @@ class DEIMOS_Model(tf.keras.Model):
         self.is_learning = True
 
         # static parameters
-        self.anneal_factor = 0 # need to figure out how to update
         self.lr = 0.01
         self.optimizer = tf.keras.optimizers.Adam(self.lr)
         self.epsilon = 1e-10
