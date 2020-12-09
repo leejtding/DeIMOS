@@ -51,4 +51,3 @@ tsne_visualization(output, **params)
 # plt.figure()
 # plt.plot(np.arange(2, max_k), sil_scores)
 # plt.show()
-
