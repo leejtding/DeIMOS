@@ -25,7 +25,8 @@ def tsne_visualization(feats, labels, **params):
         mask = (labels == i)
         if np.sum(mask) == 0:
             continue
-        plt.scatter(embedded[mask, 0], embedded[mask, 1], cmap='tab10')
+        plt.scatter(embedded[mask, 0], embedded[mask, 1], cmap='tab10',label=i)
+    plt.legend()
     plt.show()
 
 
