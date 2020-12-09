@@ -17,7 +17,8 @@ def get_class_dict(class_label_path):
 
     return class_dict
 
-def tsne_visualization(feats, labels, **params):
+def tsne_visualization(feats, labels, show=True, **params):
+    plt.figure()
     labels = labels.astype(np.int32)
     tsne = TSNE(**params)
     embedded = tsne.fit_transform(feats)
@@ -25,8 +26,9 @@ def tsne_visualization(feats, labels, **params):
         mask = (labels == i)
         if np.sum(mask) == 0:
             continue
-        plt.scatter(embedded[mask, 0], embedded[mask, 1], cmap='tab10',label=i)
+        plt.scatter(embedded[mask, 0], embedded[mask, 1], cmap='tab10', label=f'Cluster {i}')
     plt.legend()
-    plt.show()
+    if show:
+        plt.show()
 
 

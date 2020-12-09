@@ -8,9 +8,9 @@ class DEIMOS_Model(tf.keras.Model):
         super(DEIMOS_Model, self).__init__()
 
         # static parameters
-        self.lr = 0.001
+        self.lr = 0.5e-3
         self.optimizer = tf.keras.optimizers.Adam(self.lr)
-        self.u_coeff = 0.25
+        self.u_coeff = 0.5
         self.l_coeff = 1
         self.ul_lr = 0.02
         self.n_clusters = n_clusters
@@ -29,7 +29,7 @@ class DEIMOS_Model(tf.keras.Model):
         self.batch_norm3 = tf.keras.layers.BatchNormalization(axis=1)
         self.conv4 = tf.keras.layers.Conv2D(64, 3, strides=1, activation='relu', padding='same')
         self.batch_norm4 = tf.keras.layers.BatchNormalization(axis=1)
-        self.fc1 = tf.keras.layers.Dense(self.n_clusters * 4)
+        self.fc1 = tf.keras.layers.Dense(self.n_clusters * 8)
         self.batch_norm5 = tf.keras.layers.BatchNormalization(axis=1)
         self.fc2 = tf.keras.layers.Dense(self.n_clusters, activation='softmax')
 
@@ -94,15 +94,18 @@ class DEIMOS_Model(tf.keras.Model):
         #feats += tf.math.reduce_min(feats)
         feats, _ = tf.linalg.normalize(feats, axis=1)
         loss = 0
+        ct = 0
         for tens_1, tens_2 in combinations(feats, 2):
             dot_prod = tf.reduce_sum(tens_1 * tens_2)
             if dot_prod < self.lower_bound():
                 loss -= tf.math.log(1 - dot_prod)
+                ct += 1
             elif dot_prod > self.upper_bound():
                 loss -= tf.math.log(dot_prod)
+                ct += 1
         if loss == 0:
             return None
-        return loss
+        return loss, ct
 
     def loss_l_update(self):
         self.lamb += self.ul_lr * (self.u_coeff + self.l_coeff)
@@ -134,7 +137,7 @@ class DEIMOS_Model(tf.keras.Model):
         labels = tf.one_hot(labels, self.n_pretrain_classes)
         loss = tf.keras.losses.categorical_crossentropy(labels, logits, from_logits=True)
         return tf.reduce_mean(loss)
-    
+
     def call_feat_output(self, inputs):
         outs = self.conv1(inputs)
         outs = self.batch_norm1(outs, training=False)
