@@ -6,13 +6,11 @@ class DEIMOS_Model(tf.keras.Model):
     
     def __init__(self, n_clusters):
         super(DEIMOS_Model, self).__init__()
-        
-        self.is_learning = True
 
         # static parameters
-        self.lr = 0.01
+        self.lr = 0.001
         self.optimizer = tf.keras.optimizers.Adam(self.lr)
-        self.epsilon = 1e-10
+        #self.epsilon = 1e-10
         self.u_coeff = 1
         self.l_coeff = 0.1
         self.n_clusters = n_clusters
@@ -33,7 +31,7 @@ class DEIMOS_Model(tf.keras.Model):
         self.fc1 = tf.keras.layers.Dense(self.n_clusters, activation='relu')
         self.batch_norm5 = tf.keras.layers.BatchNormalization(axis=1)
         self.fc2 = tf.keras.layers.Dense(self.n_clusters, activation='softmax')
-        
+
         '''
         Dimensionality Check
         Initial: (b, 227, 227, 1)
@@ -49,6 +47,12 @@ class DEIMOS_Model(tf.keras.Model):
         After fc1: (b, self.n_clusters)
         After fc2: (b, self.n_clusters)
         '''
+    
+    def pretrain_setup(self, n_classes):
+        self.n_pretrain_classes = n_classes
+        self.pretrain_fc_out = tf.keras.layers.Dense(n_classes, name='pretrain_output')
+        self.pretrain_fc_out.trainable = True
+        self.pretrain_lr = 0.01
 
     def call(self, inputs, training=False, mask=None):
         outs = self.conv1(inputs)
@@ -88,9 +92,10 @@ class DEIMOS_Model(tf.keras.Model):
         feats, _ = tf.linalg.normalize(feats, axis=1)
         loss = 0
         for tens_1, tens_2 in combinations(feats, 2):
-            dot_prod = tf.reduce_sum(tens_1 * tens_2) + self.epsilon
+            #dot_prod = tf.reduce_sum(tens_1 * tens_2) + self.epsilon
+            dot_prod = tf.reduce_sum(tens_1 * tens_2)
             if dot_prod < self.lower_bound():
-                loss = tf.math.log(1 - dot_prod)
+                loss -= tf.math.log(1 - dot_prod)
             elif dot_prod > self.upper_bound():
                 loss -= tf.math.log(dot_prod)
         if loss == 0:
@@ -99,3 +104,28 @@ class DEIMOS_Model(tf.keras.Model):
 
     def loss_l_update(self):
         self.lamb -= self.lr * (self.u_coeff - self.l_coeff)
+    
+    # Pretrain call and loss
+    def call_pretrain(self, inputs):
+        outs = self.conv1(inputs)
+        outs = self.batch_norm1(outs)
+        outs = self.max_pool(outs)
+        outs = self.conv2(outs)
+        outs = self.max_pool(outs)
+        outs = self.batch_norm2(outs)
+        outs = self.conv3(outs)
+        outs = self.max_pool(outs)
+        outs = self.batch_norm3(outs)
+        outs = self.conv4(outs)
+        outs = self.max_pool(outs)
+        outs = self.batch_norm4(outs)
+        outs = tf.keras.layers.Flatten()(outs)
+        outs = self.fc1(outs)
+        outs = self.batch_norm5(outs)
+        outs = self.pretrain_fc_out(outs)
+        return outs
+
+    def loss_pretrain(self, logits, labels):
+        labels = tf.one_hot(labels, self.n_pretrain_classes)
+        loss = tf.keras.losses.categorical_crossentropy(labels, logits, from_logits=True)
+        return tf.reduce_mean(loss)

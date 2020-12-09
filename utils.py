@@ -1,5 +1,7 @@
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
+#import matplotlib.cm as cm
+import numpy as np
 
 def get_class_dict(class_label_path):
     """
@@ -15,10 +17,15 @@ def get_class_dict(class_label_path):
 
     return class_dict
 
-def tsne_visualization(feats, **params):
+def tsne_visualization(feats, labels, **params):
+    labels = labels.astype(np.int32)
     tsne = TSNE(**params)
     embedded = tsne.fit_transform(feats)
-    plt.scatter(embedded[:, 0], embedded[:, 1])
+    for i in range(max(labels)+1):
+        mask = (labels == i)
+        if np.sum(mask) == 0:
+            continue
+        plt.scatter(embedded[mask, 0], embedded[mask, 1])
     plt.show()
 
 

@@ -25,7 +25,7 @@ def get_data(data_dir):
         file_name = tf.strings.split(file_path, os.sep)[-1].numpy().decode("utf-8")
         image = tf.cast(
             tf.image.resize(tf.io.decode_jpeg(tf.io.read_file(file_path)), [227, 227]), tf.float32) / 255
-        label = labels_dict[file_name]
+        label = labels_dict[file_name] - 1 # Convert class 1-7 to 0-6
         return image, label
 
     labelled_data = labelled_set.map(
