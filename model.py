@@ -10,7 +10,6 @@ class DEIMOS_Model(tf.keras.Model):
         # static parameters
         self.lr = 0.001
         self.optimizer = tf.keras.optimizers.Adam(self.lr)
-        #self.epsilon = 1e-10
         self.u_coeff = 1
         self.l_coeff = 0.1
         self.n_clusters = n_clusters
@@ -28,7 +27,7 @@ class DEIMOS_Model(tf.keras.Model):
         self.batch_norm3 = tf.keras.layers.BatchNormalization(axis=1)
         self.conv4 = tf.keras.layers.Conv2D(64, 3, strides=1, activation='relu', padding='same')
         self.batch_norm4 = tf.keras.layers.BatchNormalization(axis=1)
-        self.fc1 = tf.keras.layers.Dense(self.n_clusters, activation='relu')
+        self.fc1 = tf.keras.layers.Dense(self.n_clusters * 4, activation='relu')
         self.batch_norm5 = tf.keras.layers.BatchNormalization(axis=1)
         self.fc2 = tf.keras.layers.Dense(self.n_clusters, activation='softmax')
 
@@ -52,7 +51,8 @@ class DEIMOS_Model(tf.keras.Model):
         self.n_pretrain_classes = n_classes
         self.pretrain_fc_out = tf.keras.layers.Dense(n_classes, name='pretrain_output')
         self.pretrain_fc_out.trainable = True
-        self.pretrain_lr = 0.01
+        self.pretrain_lr = 0.002
+        self.pretrain_optimizer = tf.keras.optimizers.Adam(self.pretrain_lr)
 
     def call(self, inputs, training=False, mask=None):
         outs = self.conv1(inputs)
@@ -92,7 +92,6 @@ class DEIMOS_Model(tf.keras.Model):
         feats, _ = tf.linalg.normalize(feats, axis=1)
         loss = 0
         for tens_1, tens_2 in combinations(feats, 2):
-            #dot_prod = tf.reduce_sum(tens_1 * tens_2) + self.epsilon
             dot_prod = tf.reduce_sum(tens_1 * tens_2)
             if dot_prod < self.lower_bound():
                 loss -= tf.math.log(1 - dot_prod)

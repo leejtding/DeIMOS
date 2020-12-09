@@ -16,12 +16,12 @@ tsne_params = {
 
 labeled_data, unlabeled_data = get_data('data/hirise-map-proj-v3_2')
 
-model = DEIMOS_Model(n_clusters=10)
+model = DEIMOS_Model(n_clusters=4)
 
 # Pretrain the model using labeled data
 if len(sys.argv) == 2 and sys.argv[1] == 'pretrain':
     model.pretrain_setup(7)
-    n_pretrain_epochs = 15
+    n_pretrain_epochs = 20
     for i in range(n_pretrain_epochs):
         print(i)
         labeled_data = labeled_data.shuffle(200)
@@ -32,7 +32,7 @@ if len(sys.argv) == 2 and sys.argv[1] == 'pretrain':
                 logits = model.call_pretrain(batch_img)
                 loss = model.loss_pretrain(logits, batch_label)
                 grads = tape.gradient(loss, model.trainable_variables)
-                model.optimizer.apply_gradients(zip(grads, model.trainable_variables))
+                model.pretrain_optimizer.apply_gradients(zip(grads, model.trainable_variables))
             curr_losses.append(loss)
         print(f'Epoch loss: {np.mean(curr_losses)}')
     print(tf.reduce_mean(tf.cast(tf.argmax(logits, axis=1) == tf.cast(batch_label, tf.int64), float)))
@@ -49,6 +49,8 @@ for i in range(n_epochs):
     for j, batch in enumerate(batched_ds):
         with tf.GradientTape() as tape:
             out_feats = model(batch)
+            #print(tf.argmax(out_feats, axis=1))
+            #exit()
             loss = model.loss_w(out_feats)
             if loss is None:
                 continue
