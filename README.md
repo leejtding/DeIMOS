@@ -12,6 +12,8 @@ Guide on getting a GUI: https://medium.com/google-cloud/linux-gui-on-the-google-
 XFCE is already installed, so only worry about the VNC server; alternatively, same some time and effort
 by using Chrome Remote Desktop: https://cloud.google.com/solutions/chrome-desktop-remote-on-compute-engine
 
+Other notes: Code files are in /joe_qiyu_han/DeIMOS. Use 'sudo su' to get root permissions. 
+
 ### TODO: (I'm putting this here since it's surprisingly convenient and I want to make my github commit history look better.)
 
 - To run the current abomination (okay it's not an abomination but it does suck.), just download a bunch of data, and run `python3 test.py`
