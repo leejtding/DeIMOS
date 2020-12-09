@@ -10,11 +10,13 @@ class DEIMOS_Model(tf.keras.Model):
         # static parameters
         self.lr = 0.001
         self.optimizer = tf.keras.optimizers.Adam(self.lr)
-        self.u_coeff = 1
-        self.l_coeff = 0.1
+        self.u_coeff = 0.25
+        self.l_coeff = 1
+        self.ul_lr = 0.02
         self.n_clusters = n_clusters
 
         self.max_pool = tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=2)
+        self.relu = tf.keras.layers.ReLU()
 
         # parameters to optimize
         self.lamb = 0
@@ -27,7 +29,7 @@ class DEIMOS_Model(tf.keras.Model):
         self.batch_norm3 = tf.keras.layers.BatchNormalization(axis=1)
         self.conv4 = tf.keras.layers.Conv2D(64, 3, strides=1, activation='relu', padding='same')
         self.batch_norm4 = tf.keras.layers.BatchNormalization(axis=1)
-        self.fc1 = tf.keras.layers.Dense(self.n_clusters * 4, activation='relu')
+        self.fc1 = tf.keras.layers.Dense(self.n_clusters * 4)
         self.batch_norm5 = tf.keras.layers.BatchNormalization(axis=1)
         self.fc2 = tf.keras.layers.Dense(self.n_clusters, activation='softmax')
 
@@ -69,6 +71,7 @@ class DEIMOS_Model(tf.keras.Model):
         outs = self.batch_norm4(outs, training=training)
         outs = tf.keras.layers.Flatten()(outs)
         outs = self.fc1(outs)
+        outs = self.relu(outs)
         outs = self.batch_norm5(outs, training=training)
         outs = self.fc2(outs)
         return outs
@@ -85,7 +88,7 @@ class DEIMOS_Model(tf.keras.Model):
         return 0.95 - self.u_coeff * self.lamb
 
     def lower_bound(self):
-        return 0.455 + self.l_coeff * self.lamb
+        return 0.5 + self.l_coeff * self.lamb
 
     def loss_w(self, feats):
         #feats += tf.math.reduce_min(feats)
@@ -102,7 +105,9 @@ class DEIMOS_Model(tf.keras.Model):
         return loss
 
     def loss_l_update(self):
-        self.lamb -= self.lr * (self.u_coeff - self.l_coeff)
+        self.lamb += self.ul_lr * (self.u_coeff + self.l_coeff)
+        print(f'New upper bound: {self.upper_bound()}')
+        print(f'New lower bound: {self.lower_bound()}')
     
     # Pretrain call and loss
     def call_pretrain(self, inputs):
@@ -120,6 +125,7 @@ class DEIMOS_Model(tf.keras.Model):
         outs = self.batch_norm4(outs)
         outs = tf.keras.layers.Flatten()(outs)
         outs = self.fc1(outs)
+        outs = self.relu(outs)
         outs = self.batch_norm5(outs)
         outs = self.pretrain_fc_out(outs)
         return outs
@@ -128,3 +134,20 @@ class DEIMOS_Model(tf.keras.Model):
         labels = tf.one_hot(labels, self.n_pretrain_classes)
         loss = tf.keras.losses.categorical_crossentropy(labels, logits, from_logits=True)
         return tf.reduce_mean(loss)
+    
+    def call_feat_output(self, inputs):
+        outs = self.conv1(inputs)
+        outs = self.batch_norm1(outs, training=False)
+        outs = self.max_pool(outs)
+        outs = self.conv2(outs)
+        outs = self.max_pool(outs)
+        outs = self.batch_norm2(outs, training=False)
+        outs = self.conv3(outs)
+        outs = self.max_pool(outs)
+        outs = self.batch_norm3(outs, training=False)
+        outs = self.conv4(outs)
+        outs = self.max_pool(outs)
+        outs = self.batch_norm4(outs, training=False)
+        outs = tf.keras.layers.Flatten()(outs)
+        outs = self.fc1(outs)
+        return outs
