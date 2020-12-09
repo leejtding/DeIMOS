@@ -4,7 +4,15 @@
 
 Create a folder within this called "data", and download the zip in there. Use the sample_images.py script to sample images from the zipfile.
 
+### Using the VM
+You can just use the browser console from the GCloud page by clicking SSH: https://console.cloud.google.com/compute/
+Note: visualization will not work here as it is terminal-only. 
 
+Guide on getting a GUI: https://medium.com/google-cloud/linux-gui-on-the-google-cloud-platform-800719ab27c5
+XFCE is already installed, so only worry about the VNC server; alternatively, same some time and effort
+by using Chrome Remote Desktop: https://cloud.google.com/solutions/chrome-desktop-remote-on-compute-engine
+
+Other notes: Code files are in /joe_qiyu_han/DeIMOS. Use 'sudo su' to get root permissions. 
 
 ### TODO: (I'm putting this here since it's surprisingly convenient and I want to make my github commit history look better.)
 

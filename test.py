@@ -88,7 +88,9 @@ for i, batch in enumerate(batched_ds):
     predictions = np.concatenate((predictions, batch_preds))
 
 print(np.histogram(predictions))
-score = silhouette_score(full_output, predictions)
-print(f'Silhouette Score: {score}')
 tsne_visualization(full_output, predictions, **tsne_params)
-
+try:
+    score = silhouette_score(full_output, predictions)
+    print(f'Silhouette Score: {score}')
+except ValueError:
+    print('Model only produced one cluster')
