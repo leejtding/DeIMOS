@@ -5,8 +5,8 @@ from sklearn.metrics import silhouette_score
 from sklearn.cluster import KMeans
 from model import DEIMOS_Model
 from preprocess import get_data
-from utils import tsne_visualization
-import random, sys
+from utils import tsne_visualization, save_cluster_images
+import random, sys, time
 
 tf.random.set_seed(123)
 np.random.seed(123)
@@ -18,13 +18,14 @@ tsne_params = {
 }
 
 labeled_data, unlabeled_data = get_data('data/hirise-map-proj-v3_2')
+orig_data = unlabeled_data
 
 model = DEIMOS_Model(n_clusters=3)
 
 # Pretrain the model using labeled data
 if len(sys.argv) >= 2 and sys.argv[1] == 'pretrain':
     model.pretrain_setup(7)
-    n_pretrain_epochs = 20
+    n_pretrain_epochs = 1
     for i in range(n_pretrain_epochs):
         print(i)
         labeled_data = labeled_data.shuffle(200)
@@ -61,7 +62,7 @@ cluster_vars = [tens for tens in model.trainable_variables if \
     tens.name != 'pretrain_output/kernel:0' and tens.name != 'pretrain_output/bias:0']
 
 # Train loop
-n_epochs = 15
+n_epochs = 1
 for i in range(n_epochs):
     print(i)
     unlabeled_data = unlabeled_data.shuffle(200)
@@ -70,8 +71,6 @@ for i in range(n_epochs):
     for j, batch in enumerate(batched_ds):
         with tf.GradientTape() as tape:
             out_feats = model(batch)
-            #print(tf.argmax(out_feats, axis=1))
-            #exit()
             loss, ct = model.loss_w(out_feats)
             if loss is None:
                 continue
@@ -80,12 +79,13 @@ for i in range(n_epochs):
         losses.append(loss / ct)
     print(f'Last Batch Predictions: {tf.argmax(out_feats, axis=1)}')
     print(f'Average Loss per Example: {np.mean(losses)}')
-    if model.upper_bound() < model.lower_bound():
-        break
-    model.loss_l_update()
+    if model.upper_bound() > model.lower_bound():
+        model.loss_l_update()
 
 # Cluster prediction
 predictions = []
+batched_ds = orig_data.batch(60)
+
 for i, batch in enumerate(batched_ds):
     out_feats = model(batch, training=False)
     if not i:
@@ -96,6 +96,8 @@ for i, batch in enumerate(batched_ds):
     predictions = np.concatenate((predictions, batch_preds))
 
 print(np.histogram(predictions))
+
+save_cluster_images(2, full_output, predictions, orig_data)
 
 try:
     score = silhouette_score(full_output, predictions)

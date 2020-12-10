@@ -18,8 +18,8 @@ def get_data(data_dir):
 
     labels_dict = utils.get_class_dict(label_path)
 
-    labelled_set = tf.data.Dataset.list_files(labelled_path)
-    unlabelled_set = tf.data.Dataset.list_files(unlabelled_path)
+    labelled_set = tf.data.Dataset.list_files(labelled_path, shuffle=False)
+    unlabelled_set = tf.data.Dataset.list_files(unlabelled_path, shuffle=False)
 
     def process_labelled(file_path):
         file_name = tf.strings.split(file_path, os.sep)[-1].numpy().decode("utf-8")
